@@ -19,24 +19,12 @@ uint32_t get_tick_ms()
     return sys_tick_ms;
 }
 
-void systick_init()
+void systick_init(uint32_t sysclk_mhz)
 {
-    // 1. 先关闭 SysTick
     SysTick->CTRL = 0;
-    
-    // 2. 设置重装载值：72MHz / 1000 = 72000 → 减1
-    SysTick->LOAD = 72000 - 1; 
-    
-    // 3. 清空当前计数值
+    SysTick->LOAD = (sysclk_mhz * 1000) - 1;
     SysTick->VAL = 0;
-    
-    // 4. 配置：
-    // bit0=1 使能
-    // bit1=1 开启中断
-    // bit2=1 时钟源=HCLK(72MHz)
-    SysTick->CTRL = 0x07; 
-    
-    // 配置中断优先级（内核中断）
+    SysTick->CTRL = 0x07;
     NVIC_SetPriority(SysTick_IRQn, 0);
 }
 
@@ -52,37 +40,46 @@ void STM_Clock_Init(uint16_t systick)
     fac_ms = fac_us / 1000;        
 }
 
-void RCC_Clock_Init(void)
+uint32_t RCC_Clock_Init(void)
 {
-	// 1. 复位时钟
-	RCC_DeInit();
-	
-	// 2. 打开外部高速晶振 HSE (8MHz)
-	RCC_HSEConfig(RCC_HSE_ON);
-	// 等待外部晶振稳定
-	while (RCC_GetFlagStatus(RCC_FLAG_HSERDY) == RESET);
+    uint32_t sysclk_mhz;
+    uint32_t timeout;
 
-	// 3. 配置Flash（必须配置，否则72MHz会跑飞）
-	FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
-	FLASH_SetLatency(FLASH_Latency_2);
+    RCC_DeInit();
 
-	// 4. 总线分频配置
-	RCC_HCLKConfig(RCC_SYSCLK_Div1);    // HCLK = SYSCLK = 72M
-	RCC_PCLK1Config(RCC_HCLK_Div2);     // APB1 = 36M (最高只能36M)
-	RCC_PCLK2Config(RCC_HCLK_Div1);     // APB2 = 72M
+    /* 尝试启动 HSE (8MHz)，最多等待 100ms */
+    RCC_HSEConfig(RCC_HSE_ON);
+    timeout = 100000;
+    while (RCC_GetFlagStatus(RCC_FLAG_HSERDY) == RESET && --timeout);
 
-	// 5. PLL配置：HSE不分频 × 9倍频 = 8×9=72MHz
-	RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
-	
-	// 6. 开启PLL倍频
-	RCC_PLLCmd(ENABLE);
-	// 等待PLL锁定
-	while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET);
+    FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
 
-	// 7. 把PLL作为系统时钟
-	RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
-	// 等待切换成功
-	while (RCC_GetSYSCLKSource() != 0x08);
+    if (timeout > 0) {
+        /* HSE 正常 → 72MHz */
+        FLASH_SetLatency(FLASH_Latency_2);
+        RCC_HCLKConfig(RCC_SYSCLK_Div1);
+        RCC_PCLK1Config(RCC_HCLK_Div2);
+        RCC_PCLK2Config(RCC_HCLK_Div1);
+        RCC_PLLConfig(RCC_PLLSource_HSE_Div1, RCC_PLLMul_9);
+        sysclk_mhz = 72;
+    } else {
+        /* HSE 失败 → 回退到 HSI: 8MHz/2 × 16 = 64MHz */
+        FLASH_SetLatency(FLASH_Latency_1);
+        RCC_HCLKConfig(RCC_SYSCLK_Div1);
+        RCC_PCLK1Config(RCC_HCLK_Div2);
+        RCC_PCLK2Config(RCC_HCLK_Div1);
+        RCC_PLLConfig(RCC_PLLSource_HSI_Div2, RCC_PLLMul_16);
+        sysclk_mhz = 64;
+    }
+
+    RCC_PLLCmd(ENABLE);
+    timeout = 100000;
+    while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET && --timeout);
+
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+    while (RCC_GetSYSCLKSource() != 0x08);
+
+    return sysclk_mhz;
 }
 
 // 最简单的毫秒级阻塞延时

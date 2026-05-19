@@ -31,6 +31,12 @@ typedef enum {
     CHASSIS_STATE_STOP         // 紧急停止
 } chassis_state_t;
 
+// 底盘控制模式枚举
+typedef enum {
+    CHASSIS_MODE_AUTO,      // 自动避障模式
+    CHASSIS_MODE_REMOTE,    // 遥控模式
+} chassis_mode_t;
+
 // 避障参数配置
 typedef struct {
     uint16_t forward_speed;       // 前进速度 (0-32767)
@@ -66,6 +72,24 @@ typedef struct {
  * @note  设置默认配置和初始状态
  */
 void chassis_init(void);
+
+/**
+ * @brief 获取当前底盘控制模式
+ * @return 控制模式枚举值
+ */
+chassis_mode_t chassis_get_mode(void);
+
+/**
+ * @brief 设置底盘控制模式
+ * @param mode 目标控制模式
+ */
+void chassis_set_mode(chassis_mode_t mode);
+
+/**
+ * @brief 切换底盘控制模式
+ * @note  在自动和遥控模式之间切换
+ */
+void chassis_toggle_mode(void);
 
 /**
  * @brief 设置底盘配置参数

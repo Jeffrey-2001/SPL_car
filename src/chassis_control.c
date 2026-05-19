@@ -9,6 +9,7 @@
 // ========================================================================
 
 static chassis_state_t current_state = CHASSIS_STATE_STOP;
+static chassis_mode_t current_mode = CHASSIS_MODE_AUTO;  // 默认自动模式
 static chassis_config_t config = CHASSIS_DEFAULT_CONFIG;
 static uint32_t state_timer = 0;  // 状态计时器（单位：调用周期）
 
@@ -256,17 +257,26 @@ void chassis_trigger_sensors(void) {
 }
 
 void chassis_update(void) {
-    // 1. 触发传感器测距
-    chassis_trigger_sensors();
+    // 根据模式选择不同的控制逻辑
+    if (current_mode == CHASSIS_MODE_AUTO) {
+        // 自动避障模式
+        // 1. 触发传感器测距
+        chassis_trigger_sensors();
 
-    // 2. 读取传感器数据
-    read_sensors();
+        // 2. 读取传感器数据
+        read_sensors();
 
-    // 3. 更新状态机
-    update_state_machine();
+        // 3. 更新状态机
+        update_state_machine();
 
-    // 4. 执行运动控制
-    execute_motion();
+        // 4. 执行运动控制
+        execute_motion();
+    } else {
+        // 遥控模式
+        // 运动控制由remote模块调用chassis_set_state控制
+        // 这里只执行运动
+        execute_motion();
+    }
 }
 
 void chassis_set_state(chassis_state_t state) {
@@ -278,4 +288,29 @@ void chassis_emergency_stop(void) {
     current_state = CHASSIS_STATE_STOP;
     stop_emergency(config.left_motor_id);
     stop_emergency(config.right_motor_id);
+}
+
+// ========================================================================
+// 模式控制函数实现
+// ========================================================================
+
+chassis_mode_t chassis_get_mode(void) {
+    return current_mode;
+}
+
+void chassis_set_mode(chassis_mode_t mode) {
+    if (current_mode != mode) {
+        current_mode = mode;
+        // 切换模式时先停止
+        chassis_emergency_stop();
+        state_timer = 0;
+    }
+}
+
+void chassis_toggle_mode(void) {
+    if (current_mode == CHASSIS_MODE_AUTO) {
+        chassis_set_mode(CHASSIS_MODE_REMOTE);
+    } else {
+        chassis_set_mode(CHASSIS_MODE_AUTO);
+    }
 }
