@@ -5,7 +5,7 @@
 
 #include "stm32_can.h"
 
-#include "stm32_timer3.h"
+#include "stm32_timer2.h"
 
 #include "basic_data.h"
 

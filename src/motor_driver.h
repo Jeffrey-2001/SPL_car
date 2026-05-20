@@ -17,14 +17,13 @@ void stop_emergency(uint32_t device_id);
 void stop_free(uint32_t device_id);
 void stop_normal(uint32_t device_id);
 
-void run(uint32_t device_id);
-void set_speed(uint32_t device_id, uint16_t speed);   //-32768~32767
-void set_pwm(uint32_t device_id, uint16_t pwm);     //-1000~1000
+void set_speed(uint32_t device_id, uint16_t speed);
+void set_pwm(uint32_t device_id, uint16_t pwm);
 
 void turn_left(uint32_t left_id, uint32_t right_id, uint16_t speed);
 void turn_right(uint32_t left_id, uint32_t right_id, uint16_t speed);
 void stop_turning(uint32_t left_id, uint32_t right_id);
+void forward(uint32_t left_id, uint32_t right_id, uint16_t speed);
+void backward(uint32_t left_id, uint32_t right_id, uint16_t speed);
 
-void start_device(uint32_t StdId);
-void start();
-#endif // __MOTOR_DRIVER_H
+#endif

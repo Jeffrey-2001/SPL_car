@@ -50,7 +50,7 @@ static void CAN_Mode_Config(void)
 	CAN_InitStructure.CAN_TTCM=DISABLE;			   // MCR-TTCM 时间触发通信模式使能
 	CAN_InitStructure.CAN_ABOM=DISABLE;			   // MCR-ABOM 自动离线管理 
 	CAN_InitStructure.CAN_AWUM=DISABLE;			   // MCR-AWUM 自动唤醒模式
-	CAN_InitStructure.CAN_NART=DISABLE;			   // MCR-NART 禁止报文自动重传  DISABLE-自动重传
+	CAN_InitStructure.CAN_NART=ENABLE;			   // MCR-NART 禁止报文自动重传  DISABLE-自动重传
 	CAN_InitStructure.CAN_RFLM=DISABLE;			   // MCR-RFLM 接收FIFO 锁定模式 DISABLE-溢出时新报文会覆盖原有报文  
 	CAN_InitStructure.CAN_TXFP=ENABLE;			   // MCR-TXFP 发送FIFO优先级 DISABLE-优先级取决于报文标示符 
 	CAN_InitStructure.CAN_Mode=CAN_Mode_Normal;    // 正常发送模式
