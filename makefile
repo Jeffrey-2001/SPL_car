@@ -78,7 +78,8 @@ C_DEFS = \
 C_INCLUDES = \
 -Ilib/cmsis \
 -Ilib/inc \
--Isrc
+-Isrc \
+-Isrc/inc
 
 # 汇编选项
 AS_DEFS = 
